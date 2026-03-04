@@ -2,6 +2,9 @@ package api
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -577,6 +580,37 @@ func TestLoadNotInitialized(t *testing.T) {
 	_, err := Load(context.Background(), `{"dimensions":["AccessView.id"]}`)
 	if err == nil {
 		t.Error("expected error when Load called without Init")
+	}
+}
+
+// TestHandleLoad_PostWrapped 验证 POST {"query":{...},"queryType":"multi"} 的 unwrap 逻辑。
+func TestHandleLoad_PostWrapped(t *testing.T) {
+	defer func() { recover() }() // chClient=nil 会 panic，属预期，忽略
+	body := `{"query":{"dimensions":["AccessView.id"],"limit":1},"queryType":"multi"}`
+	req := httptest.NewRequest(http.MethodPost, "/load", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+
+	h := &Handler{modelLoader: model.NewLoader(model.InternalFS), chClient: nil}
+	h.HandleLoad(rr, req)
+
+	if rr.Code == http.StatusBadRequest {
+		t.Errorf("wrapped POST body should parse OK, got 400: %s", rr.Body.String())
+	}
+}
+
+// TestHandleLoad_GetQuery 验证 GET ?query=... 格式正常解析。
+func TestHandleLoad_GetQuery(t *testing.T) {
+	defer func() { recover() }()
+	q := url.QueryEscape(`{"dimensions":["AccessView.id"],"limit":1}`)
+	req := httptest.NewRequest(http.MethodGet, "/load?query="+q, nil)
+	rr := httptest.NewRecorder()
+
+	h := &Handler{modelLoader: model.NewLoader(model.InternalFS), chClient: nil}
+	h.HandleLoad(rr, req)
+
+	if rr.Code == http.StatusBadRequest {
+		t.Errorf("GET ?query= should parse OK, got 400: %s", rr.Body.String())
 	}
 }
 

@@ -42,11 +42,7 @@ func Load(ctx context.Context, queryJSON string) (*QueryResponse, error) {
 	if handler == nil {
 		return nil, fmt.Errorf("go-cube 未初始化，请先调用 Init")
 	}
-	var req QueryRequest
-	if err := json.Unmarshal([]byte(queryJSON), &req); err != nil {
-		return nil, err
-	}
-	return handler.load(ctx, &req)
+	return handler.load(ctx, []byte(queryJSON))
 }
 
 func RegisterHandler() http.Handler {
@@ -76,13 +72,7 @@ func (h *Handler) HandleLoad(w http.ResponseWriter, r *http.Request) {
 		body = []byte(r.URL.Query().Get("query"))
 	}
 
-	var req QueryRequest
-	if err := json.Unmarshal(body, &req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	resp, err := h.load(ctx, &req)
+	resp, err := h.load(ctx, body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -92,8 +82,16 @@ func (h *Handler) HandleLoad(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-func (h *Handler) load(ctx context.Context, req *QueryRequest) (*QueryResponse, error) {
-	if err := validateQuery(req); err != nil {
+func (h *Handler) load(ctx context.Context, body []byte) (*QueryResponse, error) {
+	if m := map[string]json.RawMessage{}; json.Unmarshal(body, &m) == nil && m["query"] != nil {
+		body = m["query"]
+	}
+	var req QueryRequest
+	if err := json.Unmarshal(body, &req); err != nil {
+		return nil, err
+	}
+
+	if err := validateQuery(&req); err != nil {
 		return nil, err
 	}
 
@@ -114,7 +112,7 @@ func (h *Handler) load(ctx context.Context, req *QueryRequest) (*QueryResponse, 
 		return nil, err
 	}
 
-	query, params, err := BuildQuery(req, m)
+	query, params, err := BuildQuery(&req, m)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +125,7 @@ func (h *Handler) load(ctx context.Context, req *QueryRequest) (*QueryResponse, 
 
 	return &QueryResponse{
 		QueryType: "regularQuery",
-		Results:   []QueryResult{{Query: *req, Data: data}},
+		Results:   []QueryResult{{Query: req, Data: data}},
 	}, nil
 }
 
