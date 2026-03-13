@@ -74,9 +74,45 @@ func splitMemberName(s string) (string, string, string) {
 	return cube, field, subKey
 }
 
+// granularityFunc 将 CubeJS granularity 映射到 ClickHouse 截断函数名
+var granularityFunc = map[string]string{
+	"second":  "toStartOfSecond",
+	"minute":  "toStartOfMinute",
+	"hour":    "toStartOfHour",
+	"day":     "toStartOfDay",
+	"week":    "toStartOfWeek",
+	"month":   "toStartOfMonth",
+	"quarter": "toStartOfQuarter",
+	"year":    "toStartOfYear",
+}
+
 func BuildQuery(req *QueryRequest, cube *model.Cube) (string, []interface{}, error) {
 	var sql strings.Builder
 	var params []interface{}
+
+	// 收集有 granularity 的时间维度：alias -> truncated SQL expr
+	type granularityCol struct {
+		alias string
+		expr  string
+	}
+	var granCols []granularityCol
+	for _, td := range req.TimeDimensions {
+		if td.Granularity == "" {
+			continue
+		}
+		fn, ok := granularityFunc[td.Granularity]
+		if !ok {
+			continue
+		}
+		_, fieldName, subKey := splitMemberName(td.Dimension)
+		field, ok := cube.GetField(fieldName, subKey)
+		if !ok {
+			continue
+		}
+		alias := td.Dimension + "." + td.Granularity
+		expr := fmt.Sprintf("%s(%s)", fn, field.SQL)
+		granCols = append(granCols, granularityCol{alias: alias, expr: expr})
+	}
 
 	// SELECT
 	sql.WriteString("SELECT ")
@@ -95,6 +131,14 @@ func BuildQuery(req *QueryRequest, cube *model.Cube) (string, []interface{}, err
 	}
 	writeFields(req.Dimensions)
 	writeFields(req.Measures)
+	// granularity 截断列追加在 SELECT 末尾
+	for _, gc := range granCols {
+		if !first {
+			sql.WriteString(", ")
+		}
+		fmt.Fprintf(&sql, "%s AS \"%s\"", gc.expr, gc.alias)
+		first = false
+	}
 	if first {
 		sql.WriteString("1")
 	}
@@ -173,10 +217,11 @@ func BuildQuery(req *QueryRequest, cube *model.Cube) (string, []interface{}, err
 	}
 
 	// GROUP BY
-	if len(req.Measures) > 0 && len(req.Dimensions) > 0 {
+	if len(req.Measures) > 0 && (len(req.Dimensions) > 0 || len(granCols) > 0) {
 		sql.WriteString(" GROUP BY ")
-		for i, dim := range req.Dimensions {
-			if i > 0 {
+		groupFirst := true
+		for _, dim := range req.Dimensions {
+			if !groupFirst {
 				sql.WriteString(", ")
 			}
 			_, fieldName, subKey := splitMemberName(dim)
@@ -185,6 +230,14 @@ func BuildQuery(req *QueryRequest, cube *model.Cube) (string, []interface{}, err
 			} else {
 				sql.WriteString(dim)
 			}
+			groupFirst = false
+		}
+		for _, gc := range granCols {
+			if !groupFirst {
+				sql.WriteString(", ")
+			}
+			sql.WriteString(gc.expr)
+			groupFirst = false
 		}
 	}
 

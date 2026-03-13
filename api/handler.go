@@ -7,50 +7,12 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
-	"github.com/Servicewall/go-cube/config"
 	"github.com/Servicewall/go-cube/model"
 	"github.com/Servicewall/go-cube/sql"
 )
-
-type Config struct {
-	Server struct {
-		Port int
-	}
-	ClickHouse config.ClickHouseConfig
-}
-
-var handler *Handler
-var modelLoader *model.Loader
-
-func Init(cfg *Config) error {
-	chClient, err := sql.NewClient(&cfg.ClickHouse)
-	if err != nil {
-		return err
-	}
-	modelLoader = model.NewLoader(model.InternalFS)
-	if _, err = modelLoader.LoadAll(); err != nil {
-		log.Printf("加载模型失败: %v", err)
-	}
-	handler = NewHandler(modelLoader, chClient)
-	return nil
-}
-
-// Load 执行 cube 查询，queryJSON 与 /load?query=... 接口的 JSON 格式相同
-func Load(ctx context.Context, queryJSON string) (*QueryResponse, error) {
-	if handler == nil {
-		return nil, fmt.Errorf("go-cube 未初始化，请先调用 Init")
-	}
-	return handler.load(ctx, []byte(queryJSON))
-}
-
-func RegisterHandler() http.Handler {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/load", handler.HandleLoad)
-	mux.HandleFunc("/health", handler.HealthCheck)
-	return mux
-}
 
 type Handler struct {
 	modelLoader *model.Loader
@@ -130,12 +92,8 @@ func (h *Handler) load(ctx context.Context, body []byte) (*QueryResponse, error)
 }
 
 func extractModelName(field string) string {
-	for i, ch := range field {
-		if ch == '.' {
-			return field[:i]
-		}
-	}
-	return field
+	name, _, _ := strings.Cut(field, ".")
+	return name
 }
 
 // filterMember 返回 filter 的 Member 字段；

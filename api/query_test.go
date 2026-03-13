@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -684,18 +683,6 @@ func TestBuildQuery_CustomDataSubKeyGroupBy(t *testing.T) {
 	}
 	if !contains(sql, `data[indexOf(key, 'UserToken')]`) {
 		t.Errorf("expected subKey substitution in GROUP BY, got: %s", sql)
-	}
-}
-
-func TestLoadNotInitialized(t *testing.T) {
-	// Reset global handler to ensure it's nil
-	origHandler := handler
-	handler = nil
-	defer func() { handler = origHandler }()
-
-	_, err := Load(context.Background(), `{"dimensions":["AccessView.id"]}`)
-	if err == nil {
-		t.Error("expected error when Load called without Init")
 	}
 }
 
