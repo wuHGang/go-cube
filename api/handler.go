@@ -110,6 +110,12 @@ func filterMember(f Filter) string {
 	return ""
 }
 
+// Load 执行一次 cube 查询，供作为库使用时直接调用（无需 HTTP 层）。
+// query 可以是 JSON 编码的 QueryRequest，也可以是包含 "query" 键的 JSON 对象。
+func (h *Handler) Load(ctx context.Context, query []byte) (*QueryResponse, error) {
+	return h.load(ctx, query)
+}
+
 func (h *Handler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
