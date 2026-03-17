@@ -86,6 +86,24 @@ result=$(curl -s "$BASE/load?queryType=multi&query=%7B%22measures%22%3A%20%5B%22
 check "risk list (measures + dimensions, order by filterScore/ts, limit 20)" "$result"
 
 echo ""
+echo "=== 7. 触发次数 countNum (measure: countNum, dimensions: risk/host/channel) ==="
+# measures: countNum (sum(count))
+# dimensions: risk, host, channel
+# timeDimensions: filterTs today
+# segments: org, whiteFilter, whiteRiskFilter
+result=$(curl -s "$BASE/load?queryType=multi&query=%7B%22measures%22%3A%20%5B%22RiskView.countNum%22%5D%2C%20%22timeDimensions%22%3A%20%5B%7B%22dimension%22%3A%20%22RiskView.filterTs%22%2C%20%22dateRange%22%3A%20%22today%22%7D%5D%2C%20%22filters%22%3A%20%5B%5D%2C%20%22dimensions%22%3A%20%5B%22RiskView.risk%22%2C%20%22RiskView.host%22%2C%20%22RiskView.channel%22%5D%2C%20%22segments%22%3A%20%5B%22RiskView.org%22%2C%20%22RiskView.whiteFilter%22%2C%20%22RiskView.whiteRiskFilter%22%5D%2C%20%22timezone%22%3A%20%22Asia%2FShanghai%22%2C%20%22limit%22%3A%205%7D")
+check "countNum measure (sum of count col per risk/host/channel)" "$result"
+
+echo ""
+echo "=== 8. 完整风险描述 riskFullDesc (measure: riskFullDesc, dimensions: risk/host/content) ==="
+# measures: riskFullDesc (argMax of dict desc)
+# dimensions: risk, host, content
+# timeDimensions: filterTs today
+# segments: org
+result=$(curl -s "$BASE/load?queryType=multi&query=%7B%22measures%22%3A%20%5B%22RiskView.riskFullDesc%22%5D%2C%20%22timeDimensions%22%3A%20%5B%7B%22dimension%22%3A%20%22RiskView.filterTs%22%2C%20%22dateRange%22%3A%20%22today%22%7D%5D%2C%20%22filters%22%3A%20%5B%5D%2C%20%22dimensions%22%3A%20%5B%22RiskView.risk%22%2C%20%22RiskView.host%22%2C%20%22RiskView.content%22%5D%2C%20%22segments%22%3A%20%5B%22RiskView.org%22%5D%2C%20%22timezone%22%3A%20%22Asia%2FShanghai%22%2C%20%22limit%22%3A%205%7D")
+check "riskFullDesc measure (argMax of dict desc)" "$result"
+
+echo ""
 echo "========================================"
 echo "Results: $pass passed, $fail failed"
 echo "========================================"
