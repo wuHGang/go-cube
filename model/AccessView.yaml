@@ -801,8 +801,13 @@ cube:
       type: number
       title: 阻断量
 
+    searchCount:
+      sql: "countIf((url_action[1]='search' or url_action[1]='航空-查票') and url_action[2]!='auto')"
+      type: number
+      title: 总查询量
+
     blockSearchCount:
-      sql: countIf(url_action[1]='search' and url_action[2]!='auto' and result='protect')
+      sql: "countIf((url_action[1]='search' or url_action[1]='航空-查票') and url_action[2]!='auto' and result='protect')"
       type: number
       title: 阻断查询量
 

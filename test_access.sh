@@ -260,6 +260,14 @@ result=$(curl -s "$BASE/load?queryType=multi&query=%7B%22measures%22%3A%20%5B%22
 check "category + grade GROUP BY count category!='' limit 5" "$result"
 
 echo ""
+echo "=== 27. searchCount + blockSearchCount by month (this year) ==="
+# measures: searchCount, blockSearchCount
+# timeDimensions: ts, dateRange: this year, granularity: month
+# segments: org, black
+result=$(curl -s "$BASE/load?queryType=multi&query=%7B%22measures%22%3A%20%5B%22AccessView.searchCount%22%2C%20%22AccessView.blockSearchCount%22%5D%2C%20%22timeDimensions%22%3A%20%5B%7B%22dimension%22%3A%20%22AccessView.ts%22%2C%20%22dateRange%22%3A%20%22this%20year%22%2C%20%22granularity%22%3A%20%22month%22%7D%5D%2C%20%22filters%22%3A%20%5B%5D%2C%20%22dimensions%22%3A%20%5B%5D%2C%20%22segments%22%3A%20%5B%22AccessView.org%22%2C%20%22AccessView.black%22%5D%2C%20%22timezone%22%3A%20%22Asia/Shanghai%22%7D")
+check "searchCount + blockSearchCount by month this year" "$result"
+
+echo ""
 echo "--- $pass passed, $fail failed ---"
 
 echo ""

@@ -550,10 +550,22 @@ func processFilterValue(value interface{}, operator string) interface{} {
 func parseRelativeTimeRange(s string) (string, string, bool) {
 	s = strings.TrimSpace(s)
 	switch s {
+	case "this week":
+		return "toStartOfWeek(now())", "toStartOfWeek(addWeeks(now(), 1))", true
+	case "last week":
+		return "toStartOfWeek(addWeeks(now(), -1))", "toStartOfWeek(now())", true
 	case "this month":
-		return "toStartOfMonth(now())", "toStartOfMonth(now() + INTERVAL 1 MONTH)", true
+		return "toStartOfMonth(now())", "toStartOfMonth(addMonths(now(), 1))", true
 	case "last month":
-		return "toStartOfMonth(now() - INTERVAL 1 MONTH)", "toStartOfMonth(now())", true
+		return "toStartOfMonth(addMonths(now(), -1))", "toStartOfMonth(now())", true
+	case "this year":
+		return "toStartOfYear(now())", "toStartOfYear(addYears(now(), 1))", true
+	case "last year":
+		return "toStartOfYear(addYears(now(), -1))", "toStartOfYear(now())", true
+	case "today":
+		return "toStartOfDay(now())", "toStartOfDay(addDays(now(), 1))", true
+	case "yesterday":
+		return "toStartOfDay(addDays(now(), -1))", "toStartOfDay(now())", true
 	}
 	s = strings.TrimPrefix(s, "from ")
 	if idx := strings.LastIndex(s, " to "); idx > 0 {
