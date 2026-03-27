@@ -169,7 +169,7 @@ cube:
       title: 所有风险列表
 
     allRiskScore:
-      sql: if(notEmpty(groupUniqArray(risk)), 100-100*arrayProduct(arrayMap(x -> 1-0.01*dictGetInt64('default.risk_dict','score',x), groupUniqArray(risk))), 0)
+      sql: toDecimal64(if(notEmpty(groupUniqArray(risk)), 100-100*arrayProduct(arrayMap(x -> 1-0.01*dictGetInt64('default.risk_dict','score',x), groupUniqArray(risk))), 0), 2)
       type: number
       title: 综合风险评分
 
