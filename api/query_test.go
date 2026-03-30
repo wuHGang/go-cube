@@ -308,7 +308,7 @@ func TestBuildQuery_BlackSegment(t *testing.T) {
 }
 
 func TestBuildQuery_BlackSegmentEmpty(t *testing.T) {
-	// 空 slice 时降级为 1=1，不产生非法 SQL
+	// 空 slice 时整体跳过该 segment，不产生 PREWHERE
 	req := &QueryRequest{
 		Dimensions: []string{"AccessView.id"},
 		Segments:   []string{"AccessView.black"},
@@ -322,8 +322,8 @@ func TestBuildQuery_BlackSegmentEmpty(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !contains(sql, "1=1") {
-		t.Errorf("expected 1=1 fallback for empty vars, got: %s", sql)
+	if contains(sql, "PREWHERE") {
+		t.Errorf("expected no PREWHERE for empty vars, got: %s", sql)
 	}
 	if contains(sql, "NOT IN ()") || contains(sql, "multiMatchAny(concat") {
 		t.Errorf("should not produce invalid SQL for empty lists, got: %s", sql)
@@ -905,7 +905,7 @@ func TestBuildQuery_SubquerySQLVarsOrg(t *testing.T) {
 	}
 }
 
-// TestBuildQuery_SubquerySQLVarsOrgMissing 验证没有传 vars.org 时占位符导致 FROM 变为空串，查询仍能构建
+// TestBuildQuery_SubquerySQLVarsOrgMissing 验证没有传 vars.org 时，fromSQL 中残余占位符降级为 ”，查询仍能构建
 func TestBuildQuery_SubquerySQLVarsOrgMissing(t *testing.T) {
 	cube := &model.Cube{
 		Name: "WeakView",
@@ -927,9 +927,11 @@ func TestBuildQuery_SubquerySQLVarsOrgMissing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	// vars 缺失时 applyVars 返回 ""，fromSQL 为空，FROM 子句为空
-	// 此时 SQL 包含 FROM 但没有表名，ClickHouse 会报错——这是预期行为，由调用方保证传 vars
-	if contains(sql, "'") {
-		t.Errorf("no vars provided, should not inject any quoted value, got: %s", sql)
+	// vars 缺失时 fromSQL 中占位符降级为 ''，子查询仍完整，不会产生空 FROM
+	if !contains(sql, "FROM (") {
+		t.Errorf("expected subquery FROM clause, got: %s", sql)
+	}
+	if contains(sql, "{vars.") {
+		t.Errorf("unresolved vars placeholder remaining, got: %s", sql)
 	}
 }

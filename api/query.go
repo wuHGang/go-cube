@@ -222,8 +222,8 @@ func BuildQuery(req *QueryRequest, cube *model.Cube) (string, []interface{}, err
 		return ok
 	}
 
-	// applyVars 替换 SQL 模板中的 {vars.key}，每个值加单引号并转义；空 slice 降级 1=1。
-	// 替换后仍有未解析占位符（含 vars 为空）时返回 ""，调用方跳过该 segment。
+	// applyVars 替换 SQL 模板中的 {vars.key}，每个值加单引号并转义；
+	// key 不存在或值为空 slice 时返回 "" 表示跳过（用于 segment）。
 	applyVars := func(tmpl string) string {
 		for k, vals := range req.Vars {
 			ph := "{vars." + k + "}"
@@ -231,7 +231,7 @@ func BuildQuery(req *QueryRequest, cube *model.Cube) (string, []interface{}, err
 				continue
 			}
 			if len(vals) == 0 {
-				return "1=1"
+				return "" // 空 slice 整体跳过 segment
 			}
 			quoted := make([]string, len(vals))
 			for i, v := range vals {
@@ -240,13 +240,23 @@ func BuildQuery(req *QueryRequest, cube *model.Cube) (string, []interface{}, err
 			tmpl = strings.ReplaceAll(tmpl, ph, strings.Join(quoted, ","))
 		}
 		if strings.Contains(tmpl, "{vars.") {
-			return ""
+			return "" // key 不存在，跳过该 segment
 		}
 		return tmpl
 	}
 
-	// segments 全部走 PREWHERE，applyVars 返回空串时跳过
+	// fromSQL 中未提供的占位符降级为 ''（子查询不能整体跳过）
 	fromSQL := applyVars(cube.GetSQLTable())
+	if fromSQL == "" {
+		fromSQL = cube.GetSQLTable()
+		for strings.Contains(fromSQL, "{vars.") {
+			s, e := strings.Index(fromSQL, "{vars."), 0
+			if e = strings.Index(fromSQL[s:], "}"); e < 0 {
+				break
+			}
+			fromSQL = fromSQL[:s] + "''" + fromSQL[s+e+1:]
+		}
+	}
 	for _, seg := range req.Segments {
 		_, segName, _ := splitMemberName(seg)
 		s, ok := cube.Segments[segName]
