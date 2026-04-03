@@ -67,7 +67,7 @@ func (h *Handler) query(ctx context.Context, host string, req *QueryRequest) (*Q
 
 	return &QueryResponse{
 		QueryType: "regularQuery",
-		Results:   []QueryResult{{Query: *req, Data: data}},
+		Results:   []QueryResult{{Query: *req, Data: data, Annotation: buildAnnotation(req, m)}},
 	}, nil
 }
 

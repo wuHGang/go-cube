@@ -114,11 +114,57 @@ type QueryResponse struct {
 }
 
 type QueryResult struct {
-	Query QueryRequest `json:"query"`
-	Data  []RowData    `json:"data"`
+	Query      QueryRequest `json:"query"`
+	Data       []RowData    `json:"data"`
+	Annotation Annotation   `json:"annotation"`
 }
 
 type RowData = map[string]interface{}
+
+type Annotation struct {
+	Measures       map[string]MemberAnnotation `json:"measures"`
+	Dimensions     map[string]MemberAnnotation `json:"dimensions"`
+	Segments       map[string]MemberAnnotation `json:"segments"`
+	TimeDimensions map[string]MemberAnnotation `json:"timeDimensions"`
+}
+
+type MemberAnnotation struct {
+	Title      string `json:"title"`
+	ShortTitle string `json:"shortTitle"`
+	Type       string `json:"type,omitempty"`
+}
+
+// annotateMembers 为一组成员名构建 annotation map。
+func annotateMembers[T model.Annotatable](names []string, members map[string]T) map[string]MemberAnnotation {
+	out := make(map[string]MemberAnnotation, len(names))
+	for _, name := range names {
+		_, fieldName, _ := splitMemberName(name)
+		m, ok := members[fieldName]
+		if !ok {
+			continue
+		}
+		short := m.MemberTitle()
+		if short == "" {
+			short = fieldName
+		}
+		out[name] = MemberAnnotation{Title: short, ShortTitle: short, Type: m.MemberType()}
+	}
+	return out
+}
+
+// buildAnnotation 根据请求和 cube 模型构建 annotation 元数据。
+func buildAnnotation(req *QueryRequest, cube *model.Cube) Annotation {
+	tdNames := make([]string, len(req.TimeDimensions))
+	for i, td := range req.TimeDimensions {
+		tdNames[i] = td.Dimension
+	}
+	return Annotation{
+		Dimensions:     annotateMembers(req.Dimensions, cube.Dimensions),
+		Measures:       annotateMembers(req.Measures, cube.Measures),
+		Segments:       annotateMembers(req.Segments, cube.Segments),
+		TimeDimensions: annotateMembers(tdNames, cube.Dimensions),
+	}
+}
 
 // splitMemberName 将 "CubeName.fieldName" 或 "CubeName.fieldName.subKey" 拆分为
 // (cubeName, fieldName, subKey)，subKey 为空表示无三级 key。

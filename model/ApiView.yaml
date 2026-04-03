@@ -362,6 +362,12 @@ cube:
       type: string
       title: 备注
 
+    # 传输协议: HTTP, HTTP2, WebSocket, MQTT
+    protocol:
+      sql: multiIf(match(type,'HTTP2'), 'HTTP2', position(method,'|')>0, substringIndex(method,'|',1), 'HTTP')
+      type: string
+      title: 协议
+
     authParamPath:
       sql: url_action[8]
       type: string
