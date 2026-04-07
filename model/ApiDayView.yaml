@@ -4,7 +4,7 @@ cube:
 
   dimensions:
     dt:
-      sql: dt
+      sql: toDateTime(dt)
       type: time
       title: 日期
 
@@ -63,6 +63,16 @@ cube:
       sql: arrayJoin(arrayMap((x, y) -> (x, y), status_count.1, status_count.2)).1
       type: string
       title: 状态码
+  
+    upstreamNode:
+      sql: if(position(arrayJoin(arrayZip(upstream_count.1, upstream_count.2)).1, ']')!=0, regexpExtract(arrayJoin(arrayZip(upstream_count.1, upstream_count.2)).1, '\\[(.*)\\]', 1), splitByChar(':', arrayJoin(arrayZip(upstream_count.1, upstream_count.2)).1)[1])
+      type: string
+      title: 服务器地址
+
+    upstreamNodeIP:
+      sql: If(position(if(position(arrayJoin(arrayZip(upstream_count.1, upstream_count.2)).1, ']')!=0, regexpExtract(arrayJoin(arrayZip(upstream_count.1, upstream_count.2)).1, '\\[(.*)\\]', 1), splitByChar(':', arrayJoin(arrayZip(upstream_count.1, upstream_count.2)).1)[1]), '(') AS startPos <> 0, substring(if(position(arrayJoin(arrayZip(upstream_count.1, upstream_count.2)).1, ']')!=0, regexpExtract(arrayJoin(arrayZip(upstream_count.1, upstream_count.2)).1, '\\[(.*)\\]', 1), splitByChar(':', arrayJoin(arrayZip(upstream_count.1, upstream_count.2)).1)[1]), startPos+1, length(if(position(arrayJoin(arrayZip(upstream_count.1, upstream_count.2)).1, ']')!=0, regexpExtract(arrayJoin(arrayZip(upstream_count.1, upstream_count.2)).1, '\\[(.*)\\]', 1), splitByChar(':', arrayJoin(arrayZip(upstream_count.1, upstream_count.2)).1)[1]))-startPos-1), if(position(arrayJoin(arrayZip(upstream_count.1, upstream_count.2)).1, ']')!=0, regexpExtract(arrayJoin(arrayZip(upstream_count.1, upstream_count.2)).1, '\\[(.*)\\]', 1), splitByChar(':', arrayJoin(arrayZip(upstream_count.1, upstream_count.2)).1)[1]))
+      type: string
+      title: 服务器地址IP
 
   measures:
     count:
@@ -179,3 +189,63 @@ cube:
       sql: arrayFilter(x->not has(mapKeys(uniqMapMergeIf(res_sens_uniq, dt=yesterday())), x), mapKeys(uniqMapMergeIf(res_sens_uniq, dt=today())))
       type: string
       title: 今日新增敏感
+
+    reqSensValUniq:
+      sql: arraySum(mapValues(uniqMapMerge(req_sens_uniq)))
+      type: number
+      title: 请求涉敏总数
+
+    resSensValUniq:
+      sql: arraySum(mapValues(uniqMapMerge(res_sens_uniq)))
+      type: number
+      title: 响应涉敏总数
+
+    sensValUniq:
+      sql: arraySum(mapValues(uniqMapMerge(req_sens_uniq))) + arraySum(mapValues(uniqMapMerge(res_sens_uniq)))
+      type: number
+      title: 涉敏总数
+
+    hostSet:
+      sql: groupUniqArray(host)
+      type: string
+      title: Host
+
+    hostCount:
+      sql: length(groupUniqArray(host))
+      type: number
+      title: Host数
+
+    appSet:
+      sql: groupUniqArray(if(channel='default' or channel='', host, channel))
+      type: string
+      title: 应用/站点
+
+    appCount:
+      sql: length(groupUniqArray(if(channel='default' or channel='', host, channel)))
+      type: number
+      title: 应用数
+
+    upstreamNodeCount:
+      sql: sum(arrayJoin(arrayZip(upstream_count.1, upstream_count.2)).2)
+      type: number
+      title: 服务器访问量
+
+    upstreamPortUniq:
+      sql: uniqHLL12(if(countSubstrings(arrayJoin(arrayZip(upstream_count.1, upstream_count.2)).1, ':')=0 OR position(splitByChar(':', arrayJoin(arrayZip(upstream_count.1, upstream_count.2)).1)[-1], ']')>0, '80', splitByChar(':', arrayJoin(arrayZip(upstream_count.1, upstream_count.2)).1)[-1]))
+      type: number
+      title: 端口数
+
+    upstreamTop3Host:
+      sql: approx_top_sum(3)(host, arrayJoin(arrayZip(upstream_count.1, upstream_count.2)).2).1
+      type: string
+      title: 域名TOP3
+
+    upstreamTop3App:
+      sql: approx_top_sum(3)(if(channel='default' or channel='', host, channel), arrayJoin(arrayZip(upstream_count.1, upstream_count.2)).2).1
+      type: string
+      title: 应用TOP3
+
+    upstreamTop5Port:
+      sql: approx_top_sum(5)(if(countSubstrings(arrayJoin(arrayZip(upstream_count.1, upstream_count.2)).1, ':')=0 OR position(splitByChar(':', arrayJoin(arrayZip(upstream_count.1, upstream_count.2)).1)[-1], ']')>0, '80', splitByChar(':', arrayJoin(arrayZip(upstream_count.1, upstream_count.2)).1)[-1]), arrayJoin(arrayZip(upstream_count.1, upstream_count.2)).2).1
+      type: string
+      title: 端口TOP5
