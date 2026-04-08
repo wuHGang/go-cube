@@ -501,5 +501,5 @@ cube:
 
     source:
       sql: groupUniqArrayMerge(10)(source)
-      type: string
+      type: array
       title: 数据来源
