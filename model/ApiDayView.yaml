@@ -66,6 +66,11 @@ cube:
       type: number
       title: 是否请求涉敏
 
+    hasSens:
+      sql: length(finalizeAggregation(res_sens_uniq)) + length(finalizeAggregation(req_sens_uniq))
+      type: number
+      title: 是否涉敏
+
     status:
       sql: arrayJoin(arrayMap((x, y) -> (x, y), status_count.1, status_count.2)).1
       type: string
