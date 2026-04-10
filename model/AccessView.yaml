@@ -180,6 +180,11 @@ cube:
       sql: arrayJoin(res_sens_k)
       type: string
       title: 敏感数据名称(响应)
+    
+    sensKeyExt:
+      sql: arrayJoin(arrayConcat(req_sens_k, res_sens_k))
+      type: string
+      title: 敏感数据名称
 
     standard:
       sql: "splitByChar(':', arrayJoin(splitByChar(';', assumeNotNull(dictGetString('default.privacy_dict', 'level', arrayJoin(res_sens_k))))))[1]"

@@ -56,6 +56,11 @@ cube:
       type: string
       title: 响应敏感
 
+    reqSens:
+      sql: arrayJoin(arrayMap(x -> (x, finalizeAggregation(req_sens_uniq)[x]), mapKeys(finalizeAggregation(req_sens_uniq)))).1
+      type: string
+      title: 请求敏感
+
     hasResSens:
       sql: length(finalizeAggregation(res_sens_uniq))
       type: number
@@ -138,9 +143,19 @@ cube:
       title: 聚合响应敏感评分
 
     resSensCount:
-      sql: arrayJoin(arrayMap(x -> (x, uniqMapMerge(res_sens_uniq)[x]), mapKeys(uniqMapMerge(res_sens_uniq)))).2
+      sql: sum(arrayJoin(arrayMap(x -> (x, finalizeAggregation(res_sens_uniq)[x]), mapKeys(finalizeAggregation(res_sens_uniq)))).2)
       type: number
       title: 响应涉敏数
+
+    reqSensCount:
+      sql: sum(arrayJoin(arrayMap(x -> (x, finalizeAggregation(req_sens_uniq)[x]), mapKeys(finalizeAggregation(req_sens_uniq)))).2)
+      type: number
+      title: 请求涉敏数
+
+    riskCount:
+      sql: sum(arrayJoin(arrayFilter(x -> dictGetInt64('default.risk_dict','score',x.1)!=0, arrayMap((x, y) -> (x, y), risk_count.1, risk_count.2))).2)
+      type: number
+      title: 风险数
 
     statusSumMap:
       sql: sumMap(status_count)

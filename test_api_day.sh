@@ -70,6 +70,20 @@ result=$(curl -s "$BASE/load?query=%7B%22measures%22%3A%5B%22ApiDayView.upstream
 echo "Raw: $result"
 check "ApiDayView 服务器列表统计" "$result"
 
+echo ""
+echo "=== ApiDayView RiskCount分布 ==="
+#{"measures":["ApiDayView.riskCount"],"timeDimensions":[{"dimension":"ApiDayView.dt","dateRange":"from 7 days ago to now"}],"filters":[],"dimensions":["ApiDayView.risk"],"limit":50000,"segments":["ApiDayView.org","ApiDayView.black"],"timezone":"Asia/Shanghai"}
+result=$(curl -s "$BASE/load?query=%7B%22measures%22%3A%5B%22ApiDayView.riskCount%22%5D%2C%22timeDimensions%22%3A%5B%7B%22dimension%22%3A%22ApiDayView.dt%22%2C%22dateRange%22%3A%22from%207%20days%20ago%20to%20now%22%7D%5D%2C%22filters%22%3A%5B%5D%2C%22dimensions%22%3A%5B%22ApiDayView.risk%22%5D%2C%22limit%22%3A50000%2C%22segments%22%3A%5B%22ApiDayView.org%22%2C%22ApiDayView.black%22%5D%2C%22timezone%22%3A%22Asia%2FShanghai%22%7D&queryType=multi")
+echo "Raw: $result"
+check "ApiDayView RiskCount分布" "$result"
+
+echo ""
+echo "=== ApiDayView 请求涉敏分布 ==="
+#{"measures":["ApiDayView.reqSensCount"],"timeDimensions":[{"dimension":"ApiDayView.dt","dateRange":"from 7 days ago to now"}],"filters":[],"dimensions":["ApiDayView.reqSens"],"limit":50000,"segments":["ApiDayView.org","ApiDayView.black"],"timezone":"Asia/Shanghai"}
+result=$(curl -s "$BASE/load?query=%7B%22measures%22%3A%5B%22ApiDayView.reqSensCount%22%5D%2C%22timeDimensions%22%3A%5B%7B%22dimension%22%3A%22ApiDayView.dt%22%2C%22dateRange%22%3A%22from%207%20days%20ago%20to%20now%22%7D%5D%2C%22filters%22%3A%5B%5D%2C%22dimensions%22%3A%5B%22ApiDayView.reqSens%22%5D%2C%22limit%22%3A50000%2C%22segments%22%3A%5B%22ApiDayView.org%22%2C%22ApiDayView.black%22%5D%2C%22timezone%22%3A%22Asia%2FShanghai%22%7D&queryType=multi")
+echo "Raw: $result"
+check "ApiDayView 请求涉敏分布" "$result"
+
 echo "========================================"
 echo "Results: $pass passed, $fail failed"
 echo "========================================"
