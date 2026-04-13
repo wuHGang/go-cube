@@ -291,6 +291,13 @@ echo "=== 39.Apiview weakTag which is at where clause) ==="
 result=$(curl -s "$BASE/load?query=%7B%22measures%22%3A%5B%22ApiView.allCountForList%22%5D%2C%22timeDimensions%22%3A%5B%7B%22dimension%22%3A%22ApiView.ts%22%2C%22dateRange%22%3A%22today%22%7D%5D%2C%22filters%22%3A%5B%7B%22member%22%3A%22ApiView.sidebarType%22%2C%22operator%22%3A%22contains%22%2C%22values%22%3A%5B%22%E5%B7%B2%E5%8F%91%E7%8E%B0-%3E%22%5D%7D%2C%7B%22member%22%3A%22ApiView.topoNetwork%22%2C%22operator%22%3A%22notEquals%22%2C%22values%22%3A%5B%22%E5%A4%96%E5%8F%91%22%5D%7D%2C%7B%22member%22%3A%22ApiView.apiTypeTag%22%2C%22operator%22%3A%22equals%22%2C%22values%22%3A%5B%22API%22%5D%7D%2C%7B%22operator%22%3A%22contains%22%2C%22member%22%3A%22ApiView.weakTag%22%2C%22values%22%3A%5B%22%E6%97%A0%E9%89%B4%E6%9D%83%E8%BF%94%E5%9B%9E%E6%95%8F%E6%84%9F%E4%BF%A1%E6%81%AF%22%5D%7D%5D%2C%22dimensions%22%3A%5B%5D%2C%22segments%22%3A%5B%22ApiView.org%22%2C%22ApiView.black%22%2C%22ApiView.onePerDay%22%5D%2C%22timezone%22%3A%22Asia%2FShanghai%22%7D&queryType=multi")
 check "ApiView: allCountForList filter weakTag contains 无鉴权返回敏感信息" "$result"
 
+echo ""
+echo "=== 40.Apiview urlPath ==="
+#{"measures":["ApiView.sum"],"timeDimensions":[{"dimension":"ApiView.ts"}],"filters":[{"member":"ApiView.isApi","operator":"equals","values":["1"]},{"member":"ApiView.topoNetwork","operator":"notEquals","values":["外发"]},{"member":"ApiView.host","operator":"equals","values":["apigateway"]}],"dimensions":["ApiView.host","ApiView.method","ApiView.urlPath","ApiView.bizName"],"limit":60,"segments":["ApiView.org","ApiView.black","ApiView.onePerDay"],"timezone":"Asia/Shanghai"}
+result=$(curl -s "$BASE/load?query=%7B%22measures%22%3A%5B%22ApiView.sum%22%5D%2C%22timeDimensions%22%3A%5B%7B%22dimension%22%3A%22ApiView.ts%22%7D%5D%2C%22filters%22%3A%5B%7B%22member%22%3A%22ApiView.isApi%22%2C%22operator%22%3A%22equals%22%2C%22values%22%3A%5B%221%22%5D%7D%2C%7B%22member%22%3A%22ApiView.topoNetwork%22%2C%22operator%22%3A%22notEquals%22%2C%22values%22%3A%5B%22%E5%A4%96%E5%8F%91%22%5D%7D%2C%7B%22member%22%3A%22ApiView.host%22%2C%22operator%22%3A%22equals%22%2C%22values%22%3A%5B%22apigateway%22%5D%7D%5D%2C%22dimensions%22%3A%5B%22ApiView.host%22%2C%22ApiView.method%22%2C%22ApiView.urlPath%22%2C%22ApiView.bizName%22%5D%2C%22limit%22%3A60%2C%22segments%22%3A%5B%22ApiView.org%22%2C%22ApiView.black%22%2C%22ApiView.onePerDay%22%5D%2C%22timezone%22%3A%22Asia%2FShanghai%22%7D&queryType=multi")
+echo "Raw: $result"
+check "Apiview urlPath" "$result"
+
 echo "========================================"
 echo "Results: $pass passed, $fail failed"
 echo "========================================"
