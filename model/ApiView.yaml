@@ -376,6 +376,11 @@ cube:
       sql: url_action[8]
       type: string
       title: 鉴权参数
+    
+    urlPath:
+      sql: URLPathHierarchy(concat('http://x', assumeNotNull(url)))
+      type: array
+      title: 路径
 
   measures:
     sum:
